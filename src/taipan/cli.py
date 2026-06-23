@@ -871,6 +871,8 @@ def _run_bench(quick: bool = False) -> int:
         _sys.argv = ["suite"] + (["--quick"] if quick else [])
         try:
             spec.loader.exec_module(suite)
+            if hasattr(suite, "main"):
+                suite.main()
         finally:
             _sys.argv = old_argv
         return 0
