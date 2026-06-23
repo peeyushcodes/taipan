@@ -1,0 +1,67 @@
+// ═══════════════════════════════════════════════════════════
+//  Taipan — Concurrency Example
+//  Run: python taipan.py run examples/concurrency.tp
+// ═══════════════════════════════════════════════════════════
+
+import time
+
+// ── Basic Spawn & Wait ─────────────────────────────────────
+func task(name, duration) {
+    show("[" + name + "] Starting...")
+    time.sleep(duration)
+    show("[" + name + "] Done after " + str(duration) + "s")
+}
+
+show("=== Concurrent Tasks ===")
+show("Launching 3 tasks concurrently...")
+
+let start = time.clock()
+
+spawn task("Task-A", 0.5)
+spawn task("Task-B", 0.3)
+spawn task("Task-C", 0.4)
+
+wait   // Join all spawned threads
+
+let elapsed = time.clock() - start
+show("\nAll tasks complete! Elapsed: ~" + str(round(elapsed, 2)) + "s")
+show("(Would take ~1.2s sequentially, ran in ~0.5s concurrently)")
+
+// ── Producer / Consumer Pattern ────────────────────────────
+show("\n=== Worker Pool Demo ===")
+
+func worker(id, count) {
+    let i = 0
+    while i < count {
+        show("Worker " + str(id) + " processing item " + str(i))
+        time.sleep(0.05)
+        i += 1
+    }
+    show("Worker " + str(id) + " finished!")
+}
+
+spawn worker(1, 3)
+spawn worker(2, 3)
+spawn worker(3, 3)
+
+wait
+show("All workers done!")
+
+// ── Parallel computation ────────────────────────────────────
+show("\n=== Parallel Countdown ===")
+
+func countdown(name, from_n) {
+    let n = from_n
+    while n > 0 {
+        show(name + ": " + str(n))
+        time.sleep(0.1)
+        n -= 1
+    }
+    show(name + ": Blastoff! 🚀")
+}
+
+spawn countdown("Rocket-A", 3)
+spawn countdown("Rocket-B", 3)
+
+wait
+show("Both rockets launched!")

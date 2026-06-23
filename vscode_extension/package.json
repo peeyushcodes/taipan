@@ -1,0 +1,69 @@
+{
+  "name": "taipan",
+  "displayName": "taipan",
+  "description": "Language support for taipan (.tp files) — syntax highlighting, diagnostics, autocomplete, hover docs, go-to-definition, symbol outline, signature help, and formatting",
+  "version": "2.1.0",
+  "publisher": "peeyush",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peeyush/taipan"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages"],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "taipan",
+        "aliases": ["taipan", "taipan", "tp"],
+        "extensions": [".tp"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/taipan-light.png",
+          "dark":  "./icons/taipan-dark.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "taipan",
+        "scopeName": "source.taipan",
+        "path": "./syntaxes/taipan.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "taipan",
+        "path": "./snippets/taipan.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "taipan.runFile",
+        "title": "taipan: Run Current File",
+        "category": "taipan"
+      },
+      {
+        "command": "taipan.openRepl",
+        "title": "taipan: Open REPL",
+        "category": "taipan"
+      },
+      {
+        "command": "taipan.restartServer",
+        "title": "taipan: Restart Language Server",
+        "category": "taipan"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "taipan.runFile",
+        "key": "ctrl+shift+p",
+        "when": "editorLangId == taipan"
+      }
+    ]
+  }
+}

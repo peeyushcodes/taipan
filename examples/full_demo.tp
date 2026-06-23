@@ -1,0 +1,304 @@
+// ═══════════════════════════════════════════════════════════
+//  Taipan — Full Feature Demo
+//  Run: python taipan.py run examples/full_demo.tp
+// ═══════════════════════════════════════════════════════════
+
+import math
+import json
+import time
+import collections
+
+show("╔══════════════════════════════════════╗")
+show("║     Taipan Full Feature Demo        ║")
+show("╚══════════════════════════════════════╝\n")
+
+// ─────────────────────────────────────────
+// 1. TYPES & VARIABLES
+// ─────────────────────────────────────────
+show("=== 1. Types & Variables ===")
+
+let integer:   Int    = 42
+let decimal:   Float  = 3.14159
+let text:      String = "Taipan"
+let flag:      Bool   = true
+let nothing           = null
+
+show("Int:    " + str(integer))
+show("Float:  " + str(decimal))
+show("String: " + text)
+show("Bool:   " + str(flag))
+show("Null:   " + str(nothing))
+
+const GRAVITY = 9.81
+const LANGUAGE = "Taipan"
+show("Gravity: " + str(GRAVITY) + " m/s²")
+
+// ─────────────────────────────────────────
+// 2. COLLECTIONS
+// ─────────────────────────────────────────
+show("\n=== 2. Collections ===")
+
+// List
+let fruits = ["apple", "banana", "cherry", "mango"]
+fruits.append("pineapple")
+show("Fruits: " + str(fruits))
+show("Length: " + str(len(fruits)))
+fruits.sort()
+show("Sorted: " + str(fruits))
+
+// Map
+let person = {
+    "name": "Peeyush",
+    "age":  19,
+    "city": "India"
+}
+show("\nPerson: " + str(person))
+show("Name: " + person["name"])
+person["job"] = "Developer"
+show("Updated: " + str(person))
+
+// Set
+let unique_nums = [1, 2, 2, 3, 3, 3, 4]
+let num_set     = set(list(unique_nums))
+show("\nUnique: " + str(num_set))
+
+// Tuple
+let coords = (10, 20, 30)
+show("Coords: " + str(coords))
+
+// ─────────────────────────────────────────
+// 3. FUNCTIONS
+// ─────────────────────────────────────────
+show("\n=== 3. Functions ===")
+
+func add(a: Int, b: Int) -> Int {
+    return a + b
+}
+
+func greet(name: String, greeting: String) -> String {
+    return greeting + ", " + name + "!"
+}
+
+func power(base, exp) {
+    return base ** exp
+}
+
+func is_even(n) {
+    return n % 2 == 0
+}
+
+show("add(10, 32) = " + str(add(10, 32)))
+show("greet = " + greet("Peeyush", "Hello"))
+show("power(2, 10) = " + str(power(2, 10)))
+show("is_even(7) = " + str(is_even(7)))
+show("is_even(8) = " + str(is_even(8)))
+
+// Higher-order style
+func apply(value, fn) {
+    return fn(value)
+}
+
+// ─────────────────────────────────────────
+// 4. CONTROL FLOW
+// ─────────────────────────────────────────
+show("\n=== 4. Control Flow ===")
+
+// FizzBuzz
+show("FizzBuzz (1–20):")
+for n in 1..20 {
+    if n % 15 == 0 {
+        show("FizzBuzz")
+    }
+    else if n % 3 == 0 {
+        show("Fizz")
+    }
+    else if n % 5 == 0 {
+        show("Buzz")
+    }
+    else {
+        show(n)
+    }
+}
+
+// ─────────────────────────────────────────
+// 5. CLASSES & OOP
+// ─────────────────────────────────────────
+show("\n=== 5. Classes & OOP ===")
+
+class Shape {
+    let name
+
+    func init(name) {
+        self.name = name
+    }
+
+    func area() {
+        return 0
+    }
+
+    func describe() {
+        show(self.name + " → area = " + str(self.area()))
+    }
+}
+
+class Circle extends Shape {
+    let radius
+
+    func init(radius) {
+        self.name   = "Circle"
+        self.radius = radius
+    }
+
+    func area() {
+        return math.pi * self.radius * self.radius
+    }
+}
+
+class Rectangle extends Shape {
+    let width
+    let height
+
+    func init(width, height) {
+        self.name   = "Rectangle"
+        self.width  = width
+        self.height = height
+    }
+
+    func area() {
+        return self.width * self.height
+    }
+}
+
+let circle = Circle(5)
+let rect   = Rectangle(4, 6)
+
+circle.describe()
+rect.describe()
+
+// ─────────────────────────────────────────
+// 6. ERROR HANDLING
+// ─────────────────────────────────────────
+show("\n=== 6. Error Handling ===")
+
+func safe_divide(a, b) {
+    try {
+        if b == 0 {
+            return "Error: division by zero"
+        }
+        return a / b
+    }
+    catch err {
+        return "Caught: " + str(err)
+    }
+}
+
+show("10 / 2 = " + str(safe_divide(10, 2)))
+show("10 / 0 = " + str(safe_divide(10, 0)))
+
+try {
+    let data = [1, 2, 3]
+    let x    = data[99]   // Index out of bounds
+    show(x)
+}
+catch e {
+    show("Caught index error: " + e)
+}
+
+// ─────────────────────────────────────────
+// 7. STANDARD LIBRARY
+// ─────────────────────────────────────────
+show("\n=== 7. Standard Library ===")
+
+// Math
+show("Math:")
+show("  sqrt(144) = " + str(math.sqrt(144)))
+show("  sin(π/2)  = " + str(round(math.sin(math.pi / 2), 4)))
+show("  factorial(10) = " + str(math.factorial(10)))
+show("  random()  = " + str(round(math.random(), 4)))
+
+// Time
+show("\nTime:")
+show("  Now: " + time.now())
+show("  Timestamp: " + str(round(time.timestamp(), 0)))
+
+// Collections
+show("\nCollections:")
+let stack = collections.Stack()
+stack.push(10)
+stack.push(20)
+stack.push(30)
+show("  Stack top: " + str(stack.peek()))
+show("  Pop: " + str(stack.pop()))
+show("  Stack size: " + str(stack.size()))
+
+let queue = collections.Queue()
+queue.enqueue("first")
+queue.enqueue("second")
+queue.enqueue("third")
+show("  Queue front: " + queue.front())
+show("  Dequeue: " + queue.dequeue())
+
+// JSON
+show("\nJSON:")
+let data_map = {"name": "Taipan", "version": 1, "awesome": true}
+let json_str = json.stringify(data_map, 2)
+show("  Serialized: " + json_str)
+let parsed = json.parse(json_str)
+show("  Parsed name: " + parsed["name"])
+
+// ─────────────────────────────────────────
+// 8. ALGORITHMS
+// ─────────────────────────────────────────
+show("\n=== 8. Algorithms ===")
+
+// Bubble Sort
+func bubble_sort(arr) {
+    let n = len(arr)
+    let i = 0
+    while i < n - 1 {
+        let j = 0
+        while j < n - i - 1 {
+            if arr[j] > arr[j + 1] {
+                let tmp   = arr[j]
+                arr[j]   = arr[j + 1]
+                arr[j+1] = tmp
+            }
+            j += 1
+        }
+        i += 1
+    }
+    return arr
+}
+
+let unsorted = [64, 34, 25, 12, 22, 11, 90]
+show("Unsorted: " + str(unsorted))
+let sorted_arr = bubble_sort(unsorted)
+show("Sorted:   " + str(sorted_arr))
+
+// Binary search
+func binary_search(arr, target) {
+    let low  = 0
+    let high = len(arr) - 1
+    while low <= high {
+        let mid = int((low + high) / 2)
+        let mid_int = int(mid)
+        if arr[mid_int] == target {
+            return mid_int
+        }
+        else if arr[mid_int] < target {
+            low = mid_int + 1
+        }
+        else {
+            high = mid_int - 1
+        }
+    }
+    return -1
+}
+
+let numbers = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+let idx = binary_search(numbers, 11)
+show("Binary search for 11 in " + str(numbers))
+show("Found at index: " + str(idx))
+
+show("\n✨ Taipan Full Demo Complete!")
+show("   Built with ❤ by Peeyush")

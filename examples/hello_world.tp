@@ -1,0 +1,59 @@
+// ═══════════════════════════════════════════════════════════
+//  Taipan — Hello World Example
+//  Run: python taipan.py run examples/hello_world.tp
+// ═══════════════════════════════════════════════════════════
+
+// Basic output
+show("Hello, World!")
+
+// Variables
+let name = "Peeyush"
+let age: Int = 19
+
+show("Name: " + name)
+show("Age: " + str(age))
+
+// String interpolation via concatenation
+let greeting = "Hello, " + name + "! You are " + str(age) + " years old."
+show(greeting)
+
+// Input (uncomment to try interactively)
+// let user_name = input("What is your name? ")
+// show("Nice to meet you, " + user_name + "!")
+
+// Constants
+const PI = 3.14159
+const LANGUAGE = "Taipan"
+
+show("Pi is approximately " + str(PI))
+show("Welcome to " + LANGUAGE + "!")
+
+// Conditionals
+if age >= 18 {
+    show("You are an adult.")
+}
+else {
+    show("You are a minor.")
+}
+
+// Loops
+show("\nCounting to 5:")
+repeat 5 {
+    show("Hello!")
+}
+
+show("\nFor loop (1 to 5):")
+for i in 1..5 {
+    show(i)
+}
+
+// While loop
+let counter = 0
+show("\nWhile loop:")
+while counter < 3 {
+    show("counter = " + str(counter))
+    counter += 1
+}
+
+show("\nAll done! Great job!")
+

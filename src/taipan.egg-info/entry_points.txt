@@ -1,0 +1,4 @@
+[console_scripts]
+tai = taipan.cli:main
+taipan-lsp = taipan.lsp.server:main
+tpkg = taipan.package_manager.tpkg:main

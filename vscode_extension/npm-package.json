@@ -1,0 +1,11 @@
+{
+  "name": "taipan-vscode",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "scripts": {
+    "postinstall": "echo 'taipan VS Code extension ready. Reload VS Code to activate.'"
+  }
+}

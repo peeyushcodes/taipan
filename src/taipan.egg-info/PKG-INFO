@@ -1,0 +1,327 @@
+Metadata-Version: 2.4
+Name: taipan
+Version: 1.0.0
+Summary: A fast, AI-native programming language with bytecode VM and AOT C compilation
+Keywords: programming language,interpreter,compiler,AI,Taipan
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Software Development :: Compilers
+Classifier: Topic :: Software Development :: Interpreters
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+
+# Taipan — The AI-Native Programming Language
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-151%20passing-brightgreen.svg)]()
+[![Code style](https://img.shields.io/badge/code%20style-taipan-000000.svg)]()
+
+> **Taipan** is a modern, expressive programming language designed from the ground up with AI-native features. It combines the simplicity of Python, the safety of Rust, and the power of AI-assisted development.
+
+## Quick Start
+
+```bash
+# Install Taipan
+pip install taipan
+
+# Run a Taipan program
+tai run hello_world.pk
+
+# Interactive REPL
+tai repl
+
+# Initialize a new project
+tai init my_project
+cd my_project
+tai test
+```
+
+```pk
+// hello_world.pk
+func greet(name: String) -> String {
+    return f"Hello, {name}!"
+}
+
+show(greet("Taipan"))
+```
+
+## Features
+
+### 🧠 AI-Native
+- **AI-powered error explanations** — `TAIPAN_AI_ERRORS=1` enables AI suggestions on every error
+- **Local LLM support** — Works with Ollama (free, private, offline) via `ai.ask()`, `ai.summarize()`, `ai.generateCode()`
+- **Built-in AI assistant** — `ai myBot` declarations for AI-augmented coding
+
+### 🏗 Modern Syntax
+- **Type hints** — `func add(a: Int, b: Int) -> Int`
+- **F-strings** — `f"Hello, {name}!"`
+- **Pattern matching** — `match value { case Ok(v) => ... }`
+- **First-class functions** — Closures, lambdas, higher-order functions
+- **Classes with inheritance** — Full OOP with `extends`, `super`, `self`
+
+### ⚡ Performance
+- **Tree-walk interpreter** — For development and debugging
+- **Bytecode VM** — `--vm` flag for optimized execution
+- **C transpiler** — Compile to native C for maximum speed
+
+### 🔧 Developer Experience
+- **VS Code extension** — Syntax highlighting, diagnostics, autocomplete, hover docs, go-to-definition, symbol outline
+- **LSP server** — Full Language Server Protocol support
+- **Package manager** — `peek` for publishing and installing packages
+- **Built-in test framework** — `test "name" { assert(...) }` syntax
+- **Professional error messages** — Rust-style errors with source context and underlines
+
+## Installation
+
+### From PyPI (when published)
+```bash
+pip install taipan
+```
+
+### From Source
+```bash
+git clone https://github.com/peeyush/taipan.git
+cd taipan
+pip install -e ".[dev]"
+```
+
+### VS Code Extension
+1. Copy `vscode_extension/` to `~/.vscode/extensions/taipan-2.1.0/`
+2. Run `npm install` in the extension directory
+3. Reload VS Code
+
+## Usage
+
+### CLI Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `tai run <file.tp>` | Run a Taipan program | `tai run hello.pk` |
+| `tai run --vm <file>` | Run with VM backend | `tai run --vm fib.pk` |
+| `tai test <file>` | Run test blocks | `tai test tests.pk` |
+| `tai repl` | Interactive REPL | — |
+| `tai check <file>` | Lint without running | `tai check program.pk` |
+| `tai format <file>` | Auto-format code | `tai format messy.pk` |
+| `tai init [name]` | Initialize project | `tai init myapp` |
+| `tai build` | Verify package | — |
+| `tai tokens <file>` | Debug: show tokens | — |
+| `tai ast <file>` | Debug: show AST | — |
+
+### Package Manager (`peek`)
+
+```bash
+peek init                    # Initialize package
+peek install <pkg>[@v]       # Install package
+peek uninstall <pkg>         # Remove package
+peek list                    # List all packages
+peek search <query>          # Search registry
+peek info <pkg>              # Show package info
+peek publish                 # Publish to registry
+peek update                  # Update all packages
+peek build                   # Verify package
+```
+
+### Python Interop
+
+```pk
+import python "numpy" as np
+import python "pandas" as pd
+
+let arr = np.array([1, 2, 3])
+show(arr.mean())
+```
+
+## Language Tour
+
+### Variables & Types
+```pk
+let name = "Taipan"      // Mutable
+const PI = 3.14159        // Immutable
+
+// Type hints
+let count: Int = 42
+let price: Float = 9.99
+let items: List = [1, 2, 3]
+```
+
+### Functions
+```pk
+func add(a: Int, b: Int) -> Int {
+    return a + b
+}
+
+// Default parameters
+func greet(name: String, greeting: String = "Hello") -> String {
+    return f"{greeting}, {name}!"
+}
+
+// Higher-order functions
+func map(list: List, fn: Func) -> List {
+    let result = []
+    for item in list {
+        result.append(fn(item))
+    }
+    return result
+}
+```
+
+### Classes
+```pk
+class Animal {
+    func init(name: String) {
+        self.name = name
+    }
+    func speak() -> String {
+        return "..."
+    }
+}
+
+class Dog extends Animal {
+    func speak() -> String {
+        return f"{self.name} says Woof!"
+    }
+}
+
+let dog = new Dog("Buddy")
+show(dog.speak())
+```
+
+### Concurrency
+```pk
+func worker(id: Int) {
+    show(f"Worker {id} starting")
+    time.sleep(0.5)
+    show(f"Worker {id} done")
+}
+
+// Spawn concurrent tasks
+for i in 1..5 {
+    spawn worker(i)
+}
+wait
+show("All workers finished!")
+```
+
+### AI Features
+```pk
+// Built-in AI assistant
+ai myBot
+show(myBot.ask("What is a closure?"))
+show(myBot.summarize("Long text here..."))
+
+// Or use the AI module directly
+import ai
+show(ai.isAvailable())           // Check if AI is available
+show(ai.generateCode("fibonacci")) // Generate code
+```
+
+### Error Handling
+```pk
+try {
+    let result = 10 / 0
+} catch (err) {
+    show(f"Caught error: {err}")
+}
+
+// Or use catch expression
+let safe_result = catch { 10 / 0 }
+if safe_result != null {
+    show(f"Error: {safe_result}")
+}
+```
+
+### Testing
+```pk
+func factorial(n: Int) -> Int {
+    if n <= 1 { return 1 }
+    return n * factorial(n - 1)
+}
+
+test "factorial of 0 is 1" {
+    assert(factorial(0) == 1)
+}
+
+test "factorial of 5 is 120" {
+    assert(factorial(5) == 120)
+}
+
+test "factorial handles negatives" {
+    let err = catch { factorial(-1) }
+    assert(err != null)
+}
+```
+
+## Standard Library
+
+| Module | Functions |
+|--------|-----------|
+| `math` | `sqrt`, `pow`, `sin`, `cos`, `log`, `random`, `randint`, `factorial`, `gcd`, `clamp`, `lerp`, `pi`, `e` |
+| `string` | `upper`, `lower`, `split`, `join`, `replace`, `strip`, `startsWith`, `endsWith`, `contains`, `substring`, `regexMatch` |
+| `json` | `stringify`, `parse`, `save`, `load` |
+| `time` | `now`, `timestamp`, `sleep`, `year`, `month`, `day`, `hour`, `minute`, `second` |
+| `file` | `read`, `write`, `append`, `lines`, `delete`, `exists`, `listDir`, `mkdir` |
+| `collections` | `stack`, `queue`, `deque`, `priority_queue`, `heap`, `graph`, `binary_tree` |
+| `network` | `get`, `post`, `put`, `delete`, `head`, `patch` |
+| `ai` | `ask`, `summarize`, `generateCode`, `classify`, `translate`, `sentiment`, `isAvailable` |
+
+## Configuration
+
+Create `taipan.toml` in your project root:
+
+```toml
+[package]
+name = "my-project"
+version = "0.1.0"
+description = "My Taipan project"
+author = "Your Name"
+license = "MIT"
+
+[dependencies]
+# other_pkg = "1.0.0"
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `TAIPAN_AI_ERRORS` | Enable AI-powered error explanations |
+| `OPENAI_API_KEY` | OpenAI API key for cloud AI features |
+| `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
+| `TAIPAN_DEBUG` | Show full Python tracebacks |
+
+## Roadmap
+
+- [x] Tree-walk interpreter
+- [x] Bytecode VM
+- [x] LSP server (diagnostics, hover, completion, go-to-definition, semantic tokens)
+- [x] VS Code extension
+- [x] Package manager (`peek`)
+- [x] Test framework
+- [x] Python interop
+- [x] AI integration (Ollama + OpenAI)
+- [ ] JIT compilation
+- [ ] WebAssembly target
+- [ ] Native package registry (taipan.dev)
+- [ ] Type inference
+- [ ] Generics
+- [ ] Async/await
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+Built with ❤ by Peeyush

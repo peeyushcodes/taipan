@@ -1,0 +1,66 @@
+// ═══════════════════════════════════════════════════════════
+//  Taipan — AI Demo
+//  Run: python taipan.py run examples/ai_demo.tp
+//  Set OPENAI_API_KEY for real AI responses.
+// ═══════════════════════════════════════════════════════════
+
+import ai
+
+show("=== Taipan AI Demo ===\n")
+
+// ── Check AI availability ──────────────────────────────────
+let available = ai.isAvailable()
+if available {
+    show("✓ OpenAI API connected")
+}
+else {
+    show("⚠ Running in offline mock mode")
+    show("  Set OPENAI_API_KEY for real AI responses\n")
+}
+
+// ── AI assistant via 'ai' keyword ──────────────────────────
+ai myAssistant
+
+show("=== AI Assistant ===")
+let response = myAssistant.ask("What is the capital of France?")
+show("Question: What is the capital of France?")
+show("Answer:   " + response)
+
+// ── Summarization ─────────────────────────────────────────
+show("\n=== AI Summarization ===")
+let text = "Artificial Intelligence (AI) is the simulation of human intelligence in machines. AI includes machine learning, natural language processing, and computer vision. It is transforming industries from healthcare to autonomous vehicles."
+let summary = ai.summarize(text)
+show("Original: " + text)
+show("Summary:  " + summary)
+
+// ── Code Generation ────────────────────────────────────────
+show("\n=== AI Code Generation ===")
+let code_prompt = "a Taipan function that reverses a string"
+let generated = ai.generateCode(code_prompt)
+show("Prompt:    " + code_prompt)
+show("Generated:\n" + generated)
+
+// ── Sentiment Analysis ─────────────────────────────────────
+show("\n=== Sentiment Analysis ===")
+let reviews = [
+    "This product is absolutely amazing! I love it!",
+    "Terrible quality, broke after one day.",
+    "It works fine, nothing special.",
+]
+
+for review in reviews {
+    let sentiment = ai.sentiment(review)
+    show("Review:    " + review)
+    show("Sentiment: " + sentiment + "\n")
+}
+
+// ── Translation ────────────────────────────────────────────
+show("=== Translation ===")
+let english = "Hello, how are you today?"
+let spanish = ai.translate(english, "Spanish")
+let hindi   = ai.translate(english, "Hindi")
+show("English: " + english)
+show("Spanish: " + spanish)
+show("Hindi:   " + hindi)
+
+show("\n✨ AI demo complete!")

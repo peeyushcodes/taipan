@@ -1,0 +1,163 @@
+// ═══════════════════════════════════════════════════════════
+//  Taipan — Classes & OOP Example
+//  Run: python taipan.py run examples/classes.tp
+// ═══════════════════════════════════════════════════════════
+
+// ── Basic Class ────────────────────────────────────────────
+class Animal {
+    let name
+    let sound
+    let legs
+
+    func init(name, sound, legs) {
+        self.name  = name
+        self.sound = sound
+        self.legs  = legs
+    }
+
+    func speak() {
+        show(self.name + " says: " + self.sound)
+    }
+
+    func describe() {
+        show(self.name + " has " + str(self.legs) + " legs.")
+    }
+}
+
+let dog = Animal("Rex", "Woof!", 4)
+let cat = Animal("Luna", "Meow!", 4)
+let bird = Animal("Tweety", "Tweet!", 2)
+
+dog.speak()
+cat.speak()
+bird.speak()
+dog.describe()
+
+// ── Inheritance ────────────────────────────────────────────
+class Dog extends Animal {
+    let breed
+
+    func init(name, breed) {
+        self.name  = name
+        self.sound = "Woof!"
+        self.legs  = 4
+        self.breed = breed
+    }
+
+    func fetch(item) {
+        show(self.name + " fetches the " + item + "!")
+    }
+
+    func info() {
+        show(self.name + " is a " + self.breed)
+        self.speak()
+    }
+}
+
+show("\n=== Inheritance ===")
+let buddy = Dog("Buddy", "Golden Retriever")
+buddy.info()
+buddy.fetch("ball")
+buddy.describe()
+
+// ── Student Management System ──────────────────────────────
+class Student {
+    let name
+    let age
+    let grades
+
+    func init(name, age) {
+        self.name   = name
+        self.age    = age
+        self.grades = []
+    }
+
+    func addGrade(subject, score) {
+        self.grades.append(str(subject) + ": " + str(score))
+        show("Added " + subject + " grade for " + self.name)
+    }
+
+    func average() {
+        // Simple average of passed scores
+        return 85   // Placeholder for demo
+    }
+
+    func greet() {
+        show("Hello! I'm " + self.name + ", age " + str(self.age))
+    }
+
+    func report() {
+        show("\n--- Report Card ---")
+        show("Student: " + self.name)
+        show("Age:     " + str(self.age))
+        show("Grades:  " + str(self.grades))
+    }
+}
+
+show("\n=== Student Management ===")
+let alice = Student("Alice", 20)
+let bob   = Student("Bob", 19)
+
+alice.greet()
+bob.greet()
+
+alice.addGrade("Math", 95)
+alice.addGrade("Science", 88)
+alice.addGrade("English", 92)
+
+bob.addGrade("Math", 78)
+bob.addGrade("Science", 82)
+
+alice.report()
+bob.report()
+
+// ── Bank Account ───────────────────────────────────────────
+class BankAccount {
+    let owner
+    let balance
+
+    func init(owner, initial_balance) {
+        self.owner   = owner
+        self.balance = initial_balance
+    }
+
+    func deposit(amount) {
+        if amount <= 0 {
+            show("Deposit amount must be positive!")
+            return
+        }
+        self.balance += amount
+        show("Deposited $" + str(amount) + " | Balance: $" + str(self.balance))
+    }
+
+    func withdraw(amount) {
+        if amount <= 0 {
+            show("Withdrawal amount must be positive!")
+            return
+        }
+        if amount > self.balance {
+            show("Insufficient funds! Balance: $" + str(self.balance))
+            return
+        }
+        self.balance -= amount
+        show("Withdrew $" + str(amount) + " | Balance: $" + str(self.balance))
+    }
+
+    func getBalance() {
+        return self.balance
+    }
+
+    func summary() {
+        show("\n--- Account Summary ---")
+        show("Owner:   " + self.owner)
+        show("Balance: $" + str(self.balance))
+    }
+}
+
+show("\n=== Bank Account ===")
+let account = BankAccount("Peeyush", 1000)
+account.summary()
+account.deposit(500)
+account.withdraw(200)
+account.withdraw(2000)  // Should fail
+account.summary()

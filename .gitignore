@@ -1,0 +1,9 @@
+# PeeLang build artifacts
+*.c
+*.exe
+*.o
+*.so
+*.dll
+
+# PeeLang package cache
+.peelang/

@@ -1,0 +1,279 @@
+// Taipan Standard Library Tests
+// Run with: pee test examples/stdlib_tests.tp
+
+// ── Math ──────────────────────────────────────────────────────────────────────
+import math
+
+test "math.sqrt" {
+    let r = math.sqrt(9)
+    assert(r == 3.0)
+}
+
+test "math.abs negative" {
+    let r = math.abs(-42)
+    assert(r == 42)
+}
+
+test "math.pow" {
+    let r = math.pow(2, 10)
+    assert(r == 1024)
+}
+
+test "math.floor and ceil" {
+    assert(math.floor(3.7) == 3)
+    assert(math.ceil(3.2) == 4)
+}
+
+// ── Arithmetic ────────────────────────────────────────────────────────────────
+
+test "basic addition" {
+    let x = 2 + 3
+    assert(x == 5)
+}
+
+test "basic subtraction" {
+    assert(10 - 4 == 6)
+}
+
+test "multiplication" {
+    assert(3 * 7 == 21)
+}
+
+test "division returns float" {
+    assert(10 / 4 == 2.5)
+}
+
+test "integer power" {
+    assert(2 ** 8 == 256)
+}
+
+test "modulo" {
+    assert(17 % 5 == 2)
+}
+
+test "operator precedence" {
+    assert(2 + 3 * 4 == 14)
+}
+
+// ── Strings ───────────────────────────────────────────────────────────────────
+
+test "string concatenation" {
+    let s = "Hello" + ", " + "World!"
+    assert(s == "Hello, World!")
+}
+
+test "f-string basic" {
+    let name = "Taipan"
+    let s = f"Hello, {name}!"
+    assert(s == "Hello, Taipan!")
+}
+
+test "f-string with expression" {
+    let x = 7
+    let s = f"Result: {x * 2}"
+    assert(s == "Result: 14")
+}
+
+// ── Collections ───────────────────────────────────────────────────────────────
+
+test "list creation and indexing" {
+    let lst = [10, 20, 30]
+    assert(lst[0] == 10)
+    assert(lst[2] == 30)
+}
+
+test "list append" {
+    let lst = []
+    lst.append(1)
+    lst.append(2)
+    lst.append(3)
+    assert(len(lst) == 3)
+}
+
+test "list len builtin" {
+    let lst = [1, 2, 3, 4, 5]
+    assert(len(lst) == 5)
+}
+
+test "map creation and access" {
+    let m = {"name": "Alice", "age": 30}
+    assert(m["name"] == "Alice")
+    assert(m["age"] == 30)
+}
+
+// ── Control flow ──────────────────────────────────────────────────────────────
+
+test "if-else true branch" {
+    let x = 10
+    let result = "unknown"
+    if x > 5 {
+        result = "big"
+    } else {
+        result = "small"
+    }
+    assert(result == "big")
+}
+
+test "if-else false branch" {
+    let x = 2
+    let result = "unknown"
+    if x > 5 {
+        result = "big"
+    } else {
+        result = "small"
+    }
+    assert(result == "small")
+}
+
+test "while loop counter" {
+    let i = 0
+    let sum = 0
+    while i < 5 {
+        sum += i
+        i += 1
+    }
+    assert(sum == 10)
+}
+
+test "for range loop" {
+    let total = 0
+    for n in 1..6 {
+        total += n
+    }
+    assert(total == 15)
+}
+
+test "repeat loop" {
+    let count = 0
+    repeat 5 {
+        count += 1
+    }
+    assert(count == 5)
+}
+
+test "match statement" {
+    let x = 2
+    let result = "none"
+    match x {
+        case 1: { result = "one" }
+        case 2: { result = "two" }
+        default: { result = "other" }
+    }
+    assert(result == "two")
+}
+
+// ── Functions ─────────────────────────────────────────────────────────────────
+
+test "basic function call" {
+    func add(a, b) {
+        return a + b
+    }
+    assert(add(3, 4) == 7)
+}
+
+test "recursive fibonacci" {
+    func fib(n) {
+        if n <= 1 { return n }
+        return fib(n - 1) + fib(n - 2)
+    }
+    assert(fib(10) == 55)
+}
+
+test "lambda expression" {
+    let double = (x) => x * 2
+    assert(double(7) == 14)
+}
+
+test "closure captures variable" {
+    let base = 100
+    func add_base(x) {
+        return x + base
+    }
+    assert(add_base(5) == 105)
+}
+
+// ── Builtins ──────────────────────────────────────────────────────────────────
+
+test "len on string" {
+    assert(len("hello") == 5)
+}
+
+test "type() returns string" {
+    assert(type(42) == "Int")
+    assert(type(3.14) == "Float")
+    assert(type("hi") == "String")
+    assert(type(true) == "Bool")
+    assert(type(null) == "Null")
+}
+
+test "int() conversion" {
+    assert(int("42") == 42)
+    assert(int(3.9) == 3)
+}
+
+test "str() conversion" {
+    assert(str(42) == "42")
+    assert(str(true) == "true")
+}
+
+test "abs builtin" {
+    assert(abs(-15) == 15)
+    assert(abs(15) == 15)
+}
+
+test "min and max" {
+    assert(min(3, 7) == 3)
+    assert(max(3, 7) == 7)
+}
+
+// ── Error handling ────────────────────────────────────────────────────────────
+
+test "try-catch catches error" {
+    let caught = false
+    try {
+        let bad = null
+        bad.something()
+    } catch (e) {
+        caught = true
+    }
+    assert(caught == true)
+}
+
+// ── OOP ───────────────────────────────────────────────────────────────────────
+
+test "class instantiation" {
+    class Counter {
+        func init() {
+            self.value = 0
+        }
+        func increment() {
+            self.value += 1
+        }
+        func get() {
+            return self.value
+        }
+    }
+    let c = Counter()
+    c.increment()
+    c.increment()
+    c.increment()
+    assert(c.get() == 3)
+}
+
+test "class inheritance" {
+    class Animal {
+        func init(name) {
+            self.name = name
+        }
+        func speak() {
+            return self.name + " says hello"
+        }
+    }
+    class Dog extends Animal {
+        func speak() {
+            return self.name + " says woof"
+        }
+    }
+    let d = Dog("Rex")
+    assert(d.speak() == "Rex says woof")
+}

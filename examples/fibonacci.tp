@@ -1,0 +1,96 @@
+// ═══════════════════════════════════════════════════════════
+//  Taipan — Fibonacci & Recursion Example
+//  Run: python taipan.py run examples/fibonacci.tp
+// ═══════════════════════════════════════════════════════════
+
+// ── Recursive Fibonacci ────────────────────────────────────
+func fibonacci(n: Int) -> Int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+show("=== Recursive Fibonacci ===")
+for i in 0..10 {
+    show("fib(" + str(i) + ") = " + str(fibonacci(i)))
+}
+
+// ── Iterative Fibonacci (much faster) ─────────────────────
+func fibonacci_iter(n: Int) -> Int {
+    if n <= 1 {
+        return n
+    }
+    let a = 0
+    let b = 1
+    let i = 2
+    while i <= n {
+        let temp = a + b
+        a = b
+        b = temp
+        i += 1
+    }
+    return b
+}
+
+show("\n=== Iterative Fibonacci ===")
+for i in 0..15 {
+    show("fib(" + str(i) + ") = " + str(fibonacci_iter(i)))
+}
+
+// ── Fibonacci Sequence as List ─────────────────────────────
+func fib_sequence(count: Int) {
+    let seq = []
+    let a = 0
+    let b = 1
+    let i = 0
+    while i < count {
+        seq.append(a)
+        let temp = a + b
+        a = b
+        b = temp
+        i += 1
+    }
+    return seq
+}
+
+show("\n=== Fibonacci Sequence (first 20) ===")
+let seq = fib_sequence(20)
+show(seq)
+
+// ── Factorial ─────────────────────────────────────────────
+func factorial(n: Int) -> Int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+show("\n=== Factorials ===")
+for i in 1..10 {
+    show(str(i) + "! = " + str(factorial(i)))
+}
+
+// ── Prime checker ─────────────────────────────────────────
+func is_prime(n: Int) -> Bool {
+    if n < 2 {
+        return false
+    }
+    let i = 2
+    while i * i <= n {
+        if n % i == 0 {
+            return false
+        }
+        i += 1
+    }
+    return true
+}
+
+show("\n=== Prime Numbers up to 50 ===")
+let primes = []
+for n in 2..50 {
+    if is_prime(n) {
+        primes.append(n)
+    }
+}
+show(primes)
