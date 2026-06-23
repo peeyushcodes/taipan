@@ -296,12 +296,12 @@ show("All tasks finished!")
 ```
 
 ### Python Interop
-Import native Python libraries inside your Taipan script.
+Import native Python libraries inside your Taipan script (supported under the interpreter backend).
 ```tp
-import python "math" as pymath
-import python "time" as pytime
+import python "math"
+import python "time"
 
-show(pymath.sin(pymath.pi / 2))
+show(math.sin(math.pi / 2))
 ```
 
 ### Built-in Error Handling
