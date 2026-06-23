@@ -112,6 +112,23 @@ def ai_explain(error: TaipanError, source_line: str = "") -> Optional[str]:
         # Fall back to OpenAI
         result = _call_openai(prompt)
 
+    if not result:
+        # Fall back to local rule-based suggestions
+        err_type = type(error).__name__
+        msg = str(error).lower()
+        if "divisionbyzero" in err_type.lower() or "division by zero" in msg:
+            result = "You are trying to divide a number by zero. Check if the denominator variable is 0 before dividing."
+        elif "typeerror" in err_type.lower() or "type mismatch" in msg:
+            result = "Type mismatch. Ensure variables have compatible types (e.g., convert numbers to strings using str() before concatenating)."
+        elif "nameerror" in err_type.lower() or "not defined" in msg:
+            result = "Undefined variable or function. Check for typos or ensure the name is declared using 'let' or 'func'."
+        elif "indexerror" in err_type.lower() or "index" in msg:
+            result = "Index out of range. Check that the index is non-negative and less than the length of the list/string."
+        elif "syntaxerror" in err_type.lower():
+            result = "Syntax error. Check for missing brackets, parentheses, or operators around this line."
+        else:
+            result = f"Suggestion: An error of type '{err_type}' occurred. Check variable values, bindings, and syntax."
+
     if result:
         # Evict oldest entry if cache is full
         if len(_cache) >= _MAX_CACHE:

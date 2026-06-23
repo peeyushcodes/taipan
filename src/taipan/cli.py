@@ -24,7 +24,7 @@ except ImportError:
 from pathlib import Path
 
 # ── Force UTF-8 output on Windows ─────────────────────────────────────────────
-if sys.platform == "win32":
+if sys.platform == "win32" and "pytest" not in sys.modules and not os.environ.get("PYTEST_CURRENT_TEST"):
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
@@ -225,6 +225,16 @@ def _run_repl(use_vm: bool = False, use_ai: bool = False):
             break
 
         if not line.strip():
+            continue
+        if line.strip().startswith("?"):
+            prompt = line.strip()[1:].strip()
+            if not prompt:
+                print(c("cyan", "Ask anything! Example: ? How do I use lists?"))
+            else:
+                print(c("gray", "Thinking..."))
+                from taipan.stdlib.ai_module import _ai_call
+                response = _ai_call(prompt)
+                print(c("green", response))
             continue
         if line.strip().lower() in ("exit", "quit", "bye"):
             print(c("yellow", "Goodbye! 👋"))
@@ -625,21 +635,22 @@ def _help():
     print("Usage: tai <command> [arguments]")
     print()
     print(c("bold", "Commands:"))
-    print(f"  {c('cyan', 'run')}     <file.tp> [--vm] [--ai]  Run a program")
-    print(f"  {c('cyan', 'compile')} <file.tp> [-o <out>]     Compile to native executable")
-    print(f"  {c('cyan', 'repl')}    [--vm] [--ai]            Interactive REPL")
-    print(f"  {c('cyan', 'check')}   <file.tp>                Lint / type-check")
-    print(f"  {c('cyan', 'format')}  <file.tp>                Auto-format source code")
-    print(f"  {c('cyan', 'test')}    [file|dir]               Run test{{}} blocks")
-    print(f"  {c('cyan', 'disasm')}  <file.tp>                Print compiled bytecode")
-    print(f"  {c('cyan', 'bench')}   [quick]                  Run VM benchmarks")
-    print(f"  {c('cyan', 'doc')}     <file.tp> [-o <out>]     Generate Markdown docs")
-    print(f"  {c('cyan', 'tokens')}  <file.tp>                Print lexer tokens (debug)")
-    print(f"  {c('cyan', 'ast')}     <file.tp>                Print AST (debug)")
-    print(f"  {c('cyan', 'init')}                             Initialize a new project")
-    print(f"  {c('cyan', 'build')}                            Build/verify the project")
-    print(f"  {c('cyan', 'version')}                          Show version")
-    print(f"  {c('cyan', 'help')}                             Show this help")
+    print(f"  {c('cyan', 'run')}      <file.tp> [--vm] [--ai]  Run a program")
+    print(f"  {c('cyan', 'compile')}  <file.tp> [-o <out>]     Compile to native executable")
+    print(f"  {c('cyan', 'repl')}     [--vm] [--ai]            Interactive REPL")
+    print(f"  {c('cyan', 'check')}    <file.tp>                Lint / type-check")
+    print(f"  {c('cyan', 'format')}   <file.tp>                Auto-format source code")
+    print(f"  {c('cyan', 'test')}     [file|dir] [--ai]        Run test{{}} blocks (or generate with --ai)")
+    print(f"  {c('cyan', 'refactor')} <file.tp>                Refactor code with AI")
+    print(f"  {c('cyan', 'disasm')}   <file.tp>                Print compiled bytecode")
+    print(f"  {c('cyan', 'bench')}    [quick]                  Run VM benchmarks")
+    print(f"  {c('cyan', 'doc')}      <file.tp> [--ai] [-o <out>] Generate Markdown docs (or AI comments)")
+    print(f"  {c('cyan', 'tokens')}   <file.tp>                Print lexer tokens (debug)")
+    print(f"  {c('cyan', 'ast')}      <file.tp>                Print AST (debug)")
+    print(f"  {c('cyan', 'init')}                              Initialize a new project")
+    print(f"  {c('cyan', 'build')}                             Build/verify the project")
+    print(f"  {c('cyan', 'version')}                           Show version")
+    print(f"  {c('cyan', 'help')}                              Show this help")
     print()
     print(c("bold", "Flags:"))
     print(f"  {c('yellow', '--vm')}    Use bytecode VM backend (faster for compute-heavy code)")
@@ -655,6 +666,9 @@ def _help():
     print(f"  tai run examples/hello_world.tp")
     print(f"  tai run my_prog.tp --ai           # AI fix suggestions on error")
     print(f"  tai run my_prog.tp --vm           # Use bytecode VM")
+    print(f"  tai refactor my_prog.tp           # AI code refactoring")
+    print(f"  tai doc my_prog.tp --ai           # AI code auto-documentation")
+    print(f"  tai test my_prog.tp --ai          # AI test generation")
     print(f"  tai disasm my_prog.tp             # Inspect compiled bytecode")
     print(f"  tai bench quick                   # Quick benchmark")
     print(f"  tai test                          # Run all tests/")
@@ -749,8 +763,22 @@ def main():
             sys.exit(_print_ast(rest[0]))
 
         case "test":
+            if "--ai" in rest:
+                rest = [r for r in rest if r != "--ai"]
+                if not rest:
+                    print(c("red", "Error: specify a .tp file to generate tests for."))
+                    print("  Usage: tai test <file.tp> --ai")
+                    sys.exit(1)
+                sys.exit(_ai_generate_tests(rest[0]))
             target = rest[0] if rest else None
             sys.exit(_run_tests(target))
+
+        case "refactor":
+            if not rest:
+                print(c("red", "Error: specify a .tp file to refactor."))
+                print("  Usage: tai refactor <file.tp>")
+                sys.exit(1)
+            sys.exit(_ai_refactor(rest[0]))
 
         case "disasm":
             if not rest:
@@ -774,8 +802,11 @@ def main():
         case "doc":
             if not rest:
                 print(c("red", "Error: specify a .tp file to document."))
-                print("  Usage: python -m taipan doc <file.tp> [-o <output.md>]")
+                print("  Usage: python -m taipan doc <file.tp> [--ai] [-o <output.md>]")
                 sys.exit(1)
+            if "--ai" in rest:
+                rest = [r for r in rest if r != "--ai"]
+                sys.exit(_ai_document_file(rest[0]))
             filepath = rest[0]
             output = None
             if "-o" in rest:
@@ -798,6 +829,135 @@ def main():
             print(c("red", f"Unknown command: '{cmd}'"))
             print("Run 'tai help' for usage.")
             sys.exit(1)
+
+
+# ── AI Refactor / Doc / Test Helpers ──────────────────────────────────────────
+
+def _ai_refactor(filepath: str) -> int:
+    path = Path(filepath)
+    if not path.exists():
+        print(c("red", f"Error: File '{filepath}' not found."))
+        return 1
+    
+    source = path.read_text(encoding="utf-8")
+    prompt = f"Refactor the following Taipan code to be cleaner, more efficient, and idiomatic. Return ONLY the refactored Taipan code. Do not include markdown formatting, code block fences, or explanations:\n\n{source}"
+    
+    print(c("gray", "Sending code to AI for refactoring..."))
+    from taipan.stdlib.ai_module import _ai_call
+    refactored = _ai_call(prompt)
+    
+    if "```" in refactored:
+        lines = refactored.splitlines()
+        clean_lines = []
+        in_block = False
+        for line in lines:
+            if line.startswith("```"):
+                in_block = not in_block
+                continue
+            clean_lines.append(line)
+        refactored = "\n".join(clean_lines).strip()
+        
+    print(c("bold", "\nSuggested Refactoring:"))
+    print(c("gray", "=" * 60))
+    print(refactored)
+    print(c("gray", "=" * 60))
+    
+    try:
+        ans = input(c("yellow", "\nApply this refactoring? (y/N): ")).strip().lower()
+        if ans in ("y", "yes"):
+            path.write_text(refactored, encoding="utf-8")
+            print(c("green", f"✓ Successfully refactored '{filepath}'"))
+        else:
+            print(c("gray", "Refactoring cancelled."))
+    except (KeyboardInterrupt, EOFError):
+        print(c("gray", "\nRefactoring cancelled."))
+        
+    return 0
+
+
+def _ai_document_file(filepath: str) -> int:
+    path = Path(filepath)
+    if not path.exists():
+        print(c("red", f"Error: File '{filepath}' not found."))
+        return 1
+    
+    source = path.read_text(encoding="utf-8")
+    prompt = f"Add inline doc comments (using //) above functions and classes in the following Taipan source code to explain their behavior, parameters, and return values. Return ONLY the fully documented Taipan code. Do not include markdown formatting, code block fences, or explanations:\n\n{source}"
+    
+    print(c("gray", "Sending code to AI for auto-documentation..."))
+    from taipan.stdlib.ai_module import _ai_call
+    documented = _ai_call(prompt)
+    
+    if "```" in documented:
+        lines = documented.splitlines()
+        clean_lines = []
+        in_block = False
+        for line in lines:
+            if line.startswith("```"):
+                in_block = not in_block
+                continue
+            clean_lines.append(line)
+        documented = "\n".join(clean_lines).strip()
+        
+    print(c("bold", "\nSuggested Documented Code:"))
+    print(c("gray", "=" * 60))
+    print(documented)
+    print(c("gray", "=" * 60))
+    
+    try:
+        ans = input(c("yellow", "\nApply this documentation? (y/N): ")).strip().lower()
+        if ans in ("y", "yes"):
+            path.write_text(documented, encoding="utf-8")
+            print(c("green", f"✓ Successfully documented '{filepath}'"))
+        else:
+            print(c("gray", "Documentation cancelled."))
+    except (KeyboardInterrupt, EOFError):
+        print(c("gray", "\nDocumentation cancelled."))
+        
+    return 0
+
+
+def _ai_generate_tests(filepath: str) -> int:
+    path = Path(filepath)
+    if not path.exists():
+        print(c("red", f"Error: File '{filepath}' not found."))
+        return 1
+    
+    source = path.read_text(encoding="utf-8")
+    prompt = f"Write unit tests for the functions defined in the following Taipan code. Use the Taipan test block syntax:\n\ntest \"test name\" {{\n    assert(actual == expected)\n}}\n\nReturn ONLY the test blocks. Do not include markdown code block formatting, fences, or explanations:\n\n{source}"
+    
+    print(c("gray", "Generating unit tests via AI..."))
+    from taipan.stdlib.ai_module import _ai_call
+    generated_tests = _ai_call(prompt)
+    
+    if "```" in generated_tests:
+        lines = generated_tests.splitlines()
+        clean_lines = []
+        in_block = False
+        for line in lines:
+            if line.startswith("```"):
+                in_block = not in_block
+                continue
+            clean_lines.append(line)
+        generated_tests = "\n".join(clean_lines).strip()
+        
+    print(c("bold", "\nGenerated Unit Tests:"))
+    print(c("gray", "=" * 60))
+    print(generated_tests)
+    print(c("gray", "=" * 60))
+    
+    try:
+        ans = input(c("yellow", "\nAppend these tests to the file? (y/N): ")).strip().lower()
+        if ans in ("y", "yes"):
+            new_source = source.rstrip() + "\n\n" + generated_tests.strip() + "\n"
+            path.write_text(new_source, encoding="utf-8")
+            print(c("green", f"✓ Successfully appended unit tests to '{filepath}'"))
+        else:
+            print(c("gray", "Cancelled."))
+    except (KeyboardInterrupt, EOFError):
+        print(c("gray", "\nCancelled."))
+        
+    return 0
 
 
 # ── Disassembler ──────────────────────────────────────────────────────────────
