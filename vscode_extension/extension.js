@@ -5,18 +5,10 @@ const path = require('path');
 let client;
 
 function getServerOptions() {
-    // The extension is installed at ~/.vscode/extensions/taipan-2.0.0/
-    // The LSP server is at <project_root>/lsp/server.py
-    const extPath = path.dirname(__dirname);
-    const projectRoot = path.resolve(extPath, '..');
-    const serverPath = path.join(projectRoot, 'lsp', 'server.py');
-
     const python = process.platform === 'win32' ? 'py' : 'python3';
-
     return {
         command: python,
-        args: ['-u', serverPath],
-        options: { cwd: projectRoot }
+        args: ['-m', 'taipan.lsp.server']
     };
 }
 
