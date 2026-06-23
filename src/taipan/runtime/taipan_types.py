@@ -193,7 +193,7 @@ class PeeRange:
 class PeeFunction:
     """A Taipan function / closure."""
     def __init__(self, name: str, params, body, closure, is_builtin: bool = False,
-                 builtin_fn=None, is_method: bool = False):
+                 builtin_fn=None, is_method: bool = False, is_async: bool = False):
         self.name       = name
         self.params     = params       # List[Param]
         self.body       = body         # Block AST node (or None for builtins)
@@ -201,9 +201,11 @@ class PeeFunction:
         self.is_builtin = is_builtin
         self.builtin_fn = builtin_fn   # callable(args) for builtins
         self.is_method  = is_method
+        self.is_async   = is_async
 
     def __repr__(self):
-        return f"<func {self.name}>"
+        prefix = "async " if self.is_async else ""
+        return f"<{prefix}func {self.name}>"
 
 
 # ── PeeClass ──────────────────────────────────────────────────────────────────
@@ -336,6 +338,43 @@ class PeeAI:
         return f"<ai {self.name}>"
 
 
+# ── PeePromise ────────────────────────────────────────────────────────────────
+
+class PeePromise:
+    """A wrapper representing an asynchronous computation."""
+    def __init__(self, target_fn, *args, **kwargs):
+        import threading
+        self._result = None
+        self._error = None
+        self._resolved = False
+        self._event = threading.Event()
+        
+        def run():
+            try:
+                self._result = target_fn(*args, **kwargs)
+            except Exception as e:
+                self._error = e
+            finally:
+                self._resolved = True
+                self._event.set()
+
+        self._thread = threading.Thread(target=run, daemon=True)
+        self._thread.start()
+
+    def wait(self):
+        self._event.wait()
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+    def __repr__(self):
+        if not self._resolved:
+            return "<Promise status=pending>"
+        if self._error is not None:
+            return f"<Promise status=rejected error={self._error!r}>"
+        return f"<Promise status=resolved result={self._result!r}>"
+
+
 # ── Utility ───────────────────────────────────────────────────────────────────
 
 def pee_repr(value: Any) -> str:
@@ -347,7 +386,7 @@ def pee_repr(value: Any) -> str:
     if isinstance(value, str):
         return f'"{value}"'
     if isinstance(value, (PeeList, PeeMap, PeeSet, PeeTuple, PeeRange,
-                          PeeFunction, PeeClass, PeeInstance, BoundMethod, PeeAI)):
+                          PeeFunction, PeeClass, PeeInstance, BoundMethod, PeeAI, PeePromise)):
         return repr(value)
     return repr(value)
 
@@ -373,6 +412,6 @@ def pee_str(value: Any) -> str:
         return "null"
     if isinstance(value, bool):
         return "true" if value else "false"
-    if isinstance(value, (PeeList, PeeMap, PeeSet, PeeTuple)):
+    if isinstance(value, (PeeList, PeeMap, PeeSet, PeeTuple, PeePromise)):
         return repr(value)
     return str(value)

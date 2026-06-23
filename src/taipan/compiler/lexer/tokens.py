@@ -55,6 +55,8 @@ class TokenType(Enum):
     CASE        = auto()   # case clause
     DEFAULT     = auto()   # default clause
     TEST        = auto()   # test statement (tai test)
+    ASYNC       = auto()   # async keyword
+    AWAIT       = auto()   # await keyword
 
     # ── Arithmetic Operators ─────────────────────────────────────────────────
     PLUS        = auto()   # +
@@ -142,6 +144,8 @@ KEYWORDS: dict[str, TokenType] = {
     "case":     TokenType.CASE,
     "default":  TokenType.DEFAULT,
     "test":     TokenType.TEST,
+    "async":    TokenType.ASYNC,
+    "await":    TokenType.AWAIT,
 }
 
 

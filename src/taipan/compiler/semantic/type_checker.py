@@ -5,12 +5,14 @@ from taipan.runtime.errors import TaipanSemanticError
 
 
 class FunctionType:
-    def __init__(self, param_types: List[str], return_type: str):
+    def __init__(self, param_types: List[str], return_type: str, type_parameters: List[str] = None):
         self.param_types = param_types
         self.return_type = return_type
+        self.type_parameters = type_parameters or []
 
     def __repr__(self):
-        return f"({', '.join(self.param_types)}) -> {self.return_type}"
+        type_params = f"<{', '.join(self.type_parameters)}>" if self.type_parameters else ""
+        return f"{type_params}({', '.join(self.param_types)}) -> {self.return_type}"
 
 
 class TypeEnvironment:
@@ -63,6 +65,72 @@ class TypeChecker:
         for name, sig in BUILTIN_FUNCS.items():
             self.env.define(name, sig)
 
+    def _resolve_type(self, type_annot: Any) -> str:
+        if type_annot is None:
+            return "Any"
+        if isinstance(type_annot, str):
+            return type_annot
+        if isinstance(type_annot, SimpleType):
+            return type_annot.name
+        if isinstance(type_annot, GenericType):
+            params_str = ", ".join(self._resolve_type(p) for p in type_annot.params)
+            return f"{type_annot.name}<{params_str}>"
+        return "Any"
+
+    def _split_generic(self, type_str: str) -> tuple[str, List[str]]:
+        if "<" not in type_str:
+            return type_str, []
+        idx = type_str.index("<")
+        name = type_str[:idx].strip()
+        rest = type_str[idx+1:]
+        if rest.endswith(">"):
+            rest = rest[:-1]
+        
+        args = []
+        depth = 0
+        current = []
+        for char in rest:
+            if char == "<":
+                depth += 1
+                current.append(char)
+            elif char == ">":
+                depth -= 1
+                current.append(char)
+            elif char == "," and depth == 0:
+                args.append("".join(current).strip())
+                current = []
+            else:
+                current.append(char)
+        if current:
+            args.append("".join(current).strip())
+        return name, args
+
+    def _unify_type_vars(self, param_type: str, arg_type: str, type_params: List[str], bindings: dict[str, str]) -> None:
+        if param_type in type_params:
+            if param_type in bindings:
+                bindings[param_type] = self._unify_types([bindings[param_type], arg_type])
+            else:
+                bindings[param_type] = arg_type
+            return
+
+        if "<" in param_type and "<" in arg_type:
+            p_name, p_args = self._split_generic(param_type)
+            a_name, a_args = self._split_generic(arg_type)
+            if p_name == a_name and len(p_args) == len(a_args):
+                for p_sub, a_sub in zip(p_args, a_args):
+                    self._unify_type_vars(p_sub, a_sub, type_params, bindings)
+
+    def _substitute_type(self, type_str: str, bindings: dict[str, str]) -> str:
+        if type_str in bindings:
+            return bindings[type_str]
+        
+        if "<" in type_str:
+            name, args = self._split_generic(type_str)
+            subbed_args = [self._substitute_type(arg, bindings) for arg in args]
+            return f"{name}<{', '.join(subbed_args)}>"
+            
+        return type_str
+
     def _unify_types(self, types: List[Any]) -> Any:
         """Compute the most specific common type of a list of types."""
         if not types:
@@ -93,9 +161,12 @@ class TypeChecker:
         return current
 
     def is_compatible(self, actual: Any, expected: Any) -> bool:
+        actual = self._resolve_type(actual)
+        expected = self._resolve_type(expected)
+
         if actual == "Any" or expected == "Any":
             return True
-        # Widening widening: Int -> Float
+        # Widening: Int -> Float
         if actual == "Int" and expected == "Float":
             return True
         if isinstance(actual, FunctionType) and isinstance(expected, FunctionType):
@@ -105,6 +176,19 @@ class TypeChecker:
                 if not self.is_compatible(e_p, a_p):  # Contra-variant params
                     return False
             return self.is_compatible(actual.return_type, expected.return_type) # Co-variant returns
+            
+        # Check generic compatibility
+        if "<" in actual or "<" in expected:
+            act_name, act_args = self._split_generic(actual)
+            exp_name, exp_args = self._split_generic(expected)
+            if act_name != exp_name:
+                return False
+            if not act_args or not exp_args:
+                return True
+            if len(act_args) != len(exp_args):
+                return False
+            return all(self.is_compatible(a, e) for a, e in zip(act_args, exp_args))
+
         return actual == expected
 
     def check(self, program: Program) -> List[TaipanSemanticError]:
@@ -134,9 +218,11 @@ class TypeChecker:
         # Register all top-level functions first for forward references
         for stmt in node.body:
             if isinstance(stmt, FunctionDecl):
-                param_types = [p.type_hint or "Any" for p in stmt.params]
-                ret_type = stmt.return_type or "Any"
-                self.env.define(stmt.name, FunctionType(param_types, ret_type))
+                param_types = [self._resolve_type(p.type_hint) for p in stmt.params]
+                ret_type = self._resolve_type(stmt.return_type)
+                if stmt.is_async:
+                    ret_type = f"Promise<{ret_type}>"
+                self.env.define(stmt.name, FunctionType(param_types, ret_type, type_parameters=stmt.type_parameters))
 
         for stmt in node.body:
             self.visit(stmt)
@@ -154,7 +240,7 @@ class TypeChecker:
 
         inferred_param_types = []
         for param in node.params:
-            p_type = param.type_hint or "Any"
+            p_type = self._resolve_type(param.type_hint)
             if param.default:
                 def_type = self.visit(param.default)
                 if p_type == "Any":
@@ -168,22 +254,29 @@ class TypeChecker:
             inferred_param_types.append(p_type)
 
         old_return = self.current_return_type
-        self.current_return_type = node.return_type or "Any"
+        self.current_return_type = self._resolve_type(node.return_type)
 
         self._return_type_stack.append([])
         self.visit(node.body)
         inferred_returns = self._return_type_stack.pop()
 
-        inferred_ret_type = node.return_type
-        if inferred_ret_type is None:
+        inferred_ret_type = self._resolve_type(node.return_type)
+        if node.return_type is None:
             inferred_ret_type = self._unify_types(inferred_returns)
 
         # Update the function signature in the parent environment
         func_type = parent_env.lookup(node.name)
-        if isinstance(func_type, FunctionType):
+        if func_type == "Any" or not isinstance(func_type, FunctionType):
+            ret_sig_type = f"Promise<{inferred_ret_type}>" if node.is_async else inferred_ret_type
+            func_type = FunctionType(inferred_param_types, ret_sig_type, type_parameters=node.type_parameters)
+            parent_env.define(node.name, func_type)
+        else:
             func_type.param_types = inferred_param_types
             if node.return_type is None:
-                func_type.return_type = inferred_ret_type
+                if node.is_async:
+                    func_type.return_type = f"Promise<{inferred_ret_type}>"
+                else:
+                    func_type.return_type = inferred_ret_type
 
         self.current_return_type = old_return
         self.env = parent_env
@@ -199,7 +292,7 @@ class TypeChecker:
             ))
 
     def visit_VariableDecl(self, node: VariableDecl):
-        expected_type = node.type_hint or "Any"
+        expected_type = self._resolve_type(node.type_hint)
         if node.value:
             val_type = self.visit(node.value)
             if expected_type != "Any":
@@ -422,13 +515,21 @@ class TypeChecker:
         if isinstance(node.callee, MemberExpr):
             obj_t = self.visit(node.callee.object)
             prop = node.callee.property
-            if obj_t == "List" and prop in ("append", "push"):
+            if obj_t.startswith("List") and prop in ("append", "push"):
+                name, args = self._split_generic(obj_t)
+                expected_item_t = args[0] if args else "Any"
                 if len(node.arguments) != 1:
                     self.errors.append(TaipanSemanticError(
                         f"List.{prop}() takes exactly 1 argument, got {len(node.arguments)}",
                         node.line, node.column
                     ))
-                self.visit(node.arguments[0])
+                else:
+                    arg_t = self.visit(node.arguments[0])
+                    if not self.is_compatible(arg_t, expected_item_t):
+                        self.errors.append(TaipanSemanticError(
+                            f"Argument type mismatch: expected '{expected_item_t}', got '{arg_t}'",
+                            node.line, node.column
+                        ))
                 return "Null"
             for arg in node.arguments:
                 self.visit(arg)
@@ -446,15 +547,29 @@ class TypeChecker:
                     f"Argument count mismatch: function expected {len(callee_t.param_types)} arguments, got {len(args_types)}",
                     node.line, node.column
                 ))
+                return callee_t.return_type
+
+            bindings = {}
+            if callee_t.type_parameters:
+                for param_t, arg_t in zip(callee_t.param_types, args_types):
+                    self._unify_type_vars(param_t, arg_t, callee_t.type_parameters, bindings)
+                for tp in callee_t.type_parameters:
+                    if tp not in bindings:
+                        bindings[tp] = "Any"
+                resolved_param_types = [self._substitute_type(p_t, bindings) for p_t in callee_t.param_types]
+                resolved_return_type = self._substitute_type(callee_t.return_type, bindings)
             else:
-                if not is_show:
-                    for i, (arg_t, param_t) in enumerate(zip(args_types, callee_t.param_types)):
-                        if not self.is_compatible(arg_t, param_t):
-                            self.errors.append(TaipanSemanticError(
-                                f"Argument type mismatch at parameter {i + 1}: expected '{param_t}', got '{arg_t}'",
-                                node.line, node.column
-                            ))
-            return callee_t.return_type
+                resolved_param_types = callee_t.param_types
+                resolved_return_type = callee_t.return_type
+
+            if not is_show:
+                for i, (arg_t, param_t) in enumerate(zip(args_types, resolved_param_types)):
+                    if not self.is_compatible(arg_t, param_t):
+                        self.errors.append(TaipanSemanticError(
+                            f"Argument type mismatch at parameter {i + 1}: expected '{param_t}', got '{arg_t}'",
+                            node.line, node.column
+                        ))
+            return resolved_return_type
 
         if callee_t == "Any":
             return "Any"
@@ -464,6 +579,17 @@ class TypeChecker:
             node.line, node.column
         ))
         return "Any"
+
+    def visit_AwaitExpr(self, node: AwaitExpr) -> str:
+        expr_t = self.visit(node.expression)
+        if expr_t == "Any":
+            return "Any"
+        if expr_t.startswith("Promise"):
+            name, args = self._split_generic(expr_t)
+            if args:
+                return args[0]
+            return "Any"
+        return expr_t
 
     def visit_LambdaExpr(self, node: LambdaExpr) -> FunctionType:
         param_types = [p.type_hint or "Any" for p in node.params]

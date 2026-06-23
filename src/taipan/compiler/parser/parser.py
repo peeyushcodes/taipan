@@ -92,6 +92,9 @@ class Parser:
                 return self._parse_const_decl()
             case TokenType.FUNC:
                 return self._parse_func_decl()
+            case TokenType.ASYNC:
+                self._advance()  # consume 'async'
+                return self._parse_func_decl(is_async=True)
             case TokenType.CLASS:
                 return self._parse_class_decl()
             case TokenType.IF:
@@ -132,7 +135,7 @@ class Parser:
         name_tok = self._expect(TokenType.IDENTIFIER, "Expected variable name after 'let'")
         type_hint = None
         if self._match(TokenType.COLON):
-            type_hint = self._expect(TokenType.IDENTIFIER, "Expected type name").value
+            type_hint = self._parse_type_annotation()
         value = None
         if self._match(TokenType.EQUALS):
             value = self._parse_expr()
@@ -146,18 +149,30 @@ class Parser:
         value = self._parse_expr()
         return ConstDecl(name=name_tok.value, value=value, line=tok.line, column=tok.column)
 
-    def _parse_func_decl(self, is_method: bool = False) -> FunctionDecl:
+    def _parse_func_decl(self, is_method: bool = False, is_async: bool = False) -> FunctionDecl:
         tok = self._expect(TokenType.FUNC)
         name_tok = self._expect(TokenType.IDENTIFIER, "Expected function name after 'func'")
+        
+        # Parse optional type parameters: func name<T, U>(...)
+        type_params = []
+        if self._match(TokenType.LT):
+            while True:
+                t_tok = self._expect(TokenType.IDENTIFIER, "Expected type parameter name")
+                type_params.append(t_tok.value)
+                if not self._match(TokenType.COMMA):
+                    break
+            self._expect(TokenType.GT, "Expected '>' after type parameters")
+            
         self._expect(TokenType.LPAREN, "Expected '(' after function name")
         params = self._parse_params()
         self._expect(TokenType.RPAREN, "Expected ')' after parameters")
         ret_type = None
         if self._match(TokenType.ARROW):
-            ret_type = self._expect(TokenType.IDENTIFIER, "Expected return type").value
+            ret_type = self._parse_type_annotation()
         body = self._parse_block()
         return FunctionDecl(name=name_tok.value, params=params, body=body,
                             return_type=ret_type, is_method=is_method,
+                            is_async=is_async, type_parameters=type_params,
                             line=tok.line, column=tok.column)
 
     def _parse_params(self) -> List[Param]:
@@ -169,7 +184,7 @@ class Parser:
             type_hint = None
             default = None
             if self._match(TokenType.COLON):
-                type_hint = self._expect(TokenType.IDENTIFIER, "Expected type name").value
+                type_hint = self._parse_type_annotation()
             if self._match(TokenType.EQUALS):
                 default = self._parse_expr()
             params.append(Param(name=name_tok.value, type_hint=type_hint, default=default,
@@ -423,6 +438,10 @@ class Parser:
         return base
 
     def _parse_unary(self) -> Node:
+        if self._check(TokenType.AWAIT):
+            op = self._advance()
+            return AwaitExpr(expression=self._parse_unary(),
+                             line=op.line, column=op.column)
         if self._check(TokenType.MINUS):
             op = self._advance()
             return UnaryExpr(operator="-", operand=self._parse_unary(),
@@ -654,3 +673,20 @@ class Parser:
                 line=tok.line, column=tok.column,
             )
         return result
+
+    def _parse_type_annotation(self) -> TypeAnnotation:
+        """Parse a structured type annotation: SimpleType or GenericType."""
+        tok = self._expect(TokenType.IDENTIFIER, "Expected type name")
+        name = tok.value
+        
+        if self._match(TokenType.LT):
+            params = []
+            while True:
+                param = self._parse_type_annotation()
+                params.append(param)
+                if not self._match(TokenType.COMMA):
+                    break
+            self._expect(TokenType.GT, "Expected '>' to close type arguments")
+            return GenericType(name=name, params=params, line=tok.line, column=tok.column)
+            
+        return SimpleType(name=name, line=tok.line, column=tok.column)

@@ -171,4 +171,53 @@ class TestTypeChecker:
         assert "Type mismatch" in errors[0]
         assert "cannot assign value of type 'Float' to variable 'err' of type 'Int'" in errors[0]
 
+    def test_generic_function_check(self):
+        code = """
+        func identity<T>(x: T) -> T {
+            return x
+        }
+        let a: Int = identity(42)
+        let b: String = identity("hello")
+        let c: String = identity(42)
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Type mismatch" in errors[0]
+        assert "cannot assign value of type 'Int' to variable 'c' of type 'String'" in errors[0]
+
+    def test_generic_list_append(self):
+        code = """
+        let lst: List<Int> = []
+        lst.append(42)
+        lst.append("hello")
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Argument type mismatch: expected 'Int', got 'String'" in errors[0]
+
+    def test_async_await_types(self):
+        code = """
+        async func compute(n: Int) -> Int {
+            return n * 2
+        }
+        let p: Promise<Int> = compute(10)
+        let res: Int = await p
+        let err: String = await p
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Type mismatch" in errors[0]
+        assert "cannot assign value of type 'Int' to variable 'err' of type 'String'" in errors[0]
+
+    def test_await_non_promise(self):
+        code = """
+        let res: Int = await 42
+        let err: String = await 42
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Type mismatch" in errors[0]
+        assert "cannot assign value of type 'Int' to variable 'err' of type 'String'" in errors[0]
+
+
 

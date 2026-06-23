@@ -501,3 +501,66 @@ class TestNewFeatures:
         """Both 'ai myBot' and 'import ai' should work in the same file."""
         r = run('import ai\nai myBot\nshow(ai.isAvailable())\nshow(myBot.ask("hi"))')
         assert "false" in r or "true" in r
+
+
+class TestAsyncAwait:
+    def test_async_await_basic(self):
+        src = """
+        import time
+        async func double(x) {
+            time.sleep(0.01)
+            return x * 2
+        }
+        let p = double(10)
+        let r = await p
+        show(r)
+        """
+        assert run(src) == "20"
+
+    def test_async_await_concurrent(self):
+        src = """
+        import time
+        async func sleep_and_return(x, sec) {
+            time.sleep(sec)
+            return x
+        }
+        let p1 = sleep_and_return(1, 0.05)
+        let p2 = sleep_and_return(2, 0.01)
+        let r2 = await p2
+        let r1 = await p1
+        show(r2)
+        show(r1)
+        """
+        assert run(src) == "2\n1"
+
+    def test_await_non_promise(self):
+        src = """
+        let r = await 42
+        show(r)
+        """
+        assert run(src) == "42"
+
+    def test_async_exception_propagation(self):
+        src = """
+        async func fail() {
+            let x = 1 / 0
+        }
+        let p = fail()
+        let r = await p
+        """
+        from taipan.runtime.errors import TaipanDivisionByZeroError
+        with pytest.raises((TaipanDivisionByZeroError, Exception)):
+            run(src, capture=False)
+
+
+class TestGenericsExecution:
+    def test_generic_function_execution(self):
+        src = """
+        func identity<T>(x: T) -> T {
+            return x
+        }
+        show(identity(42))
+        show(identity("hello"))
+        """
+        assert run(src) == "42\nhello"
+

@@ -30,7 +30,7 @@ from taipan.runtime.errors import (
 from taipan.runtime.taipan_types import (
     PeeList, PeeMap, PeeSet, PeeTuple, PeeRange,
     PeeFunction, PeeClass, PeeInstance, BoundMethod, PeeAI,
-    pee_str, pee_truthy,
+    pee_str, pee_truthy, PeePromise,
 )
 
 
@@ -176,6 +176,7 @@ class Interpreter:
             PeeRange: "Range", PeeFunction: "Function",
             PeeClass: "Class", PeeInstance: "Instance",
             BoundMethod: "BoundMethod", PeeAI: "AI",
+            PeePromise: "Promise",
         }
         return type_map.get(type(v), type(v).__name__)
 
@@ -354,6 +355,7 @@ class Interpreter:
             params=node.params,
             body=node.body,
             closure=self.env,
+            is_async=node.is_async,
         )
         self.env.define(node.name, fn)
 
@@ -741,10 +743,14 @@ class Interpreter:
         if isinstance(callee, PeeFunction):
             if callee.is_builtin:
                 return callee.builtin_fn(args)
+            if callee.is_async:
+                return PeePromise(self._call_function, callee, args, line, col)
             return self._call_function(callee, args, line, col)
 
         # Bound method
         if isinstance(callee, BoundMethod):
+            if callee.method.is_async:
+                return PeePromise(self._call_method, callee.instance, callee.method, args, line, col)
             return self._call_method(callee.instance, callee.method, args, line, col)
 
         # Class instantiation
@@ -763,6 +769,20 @@ class Interpreter:
             f"'{pee_str(callee)}' ({type(callee).__name__}) is not callable",
             line, col
         )
+
+    def _eval_AwaitExpr(self, node: AwaitExpr) -> Any:
+        val = self._eval(node.expression)
+        if isinstance(val, PeePromise):
+            try:
+                return val.wait()
+            except Exception as e:
+                if isinstance(e, TaipanRuntimeError):
+                    raise e
+                raise TaipanRuntimeError(str(e), node.line, node.column)
+        return val
+
+    def _exec_AwaitExpr(self, node: AwaitExpr) -> Any:
+        return self._eval_AwaitExpr(node)
 
     def _eval_LambdaExpr(self, node: LambdaExpr) -> PeeFunction:
         """Create a PeeFunction from a lambda expression."""

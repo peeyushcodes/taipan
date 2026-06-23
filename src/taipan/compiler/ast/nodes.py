@@ -55,7 +55,7 @@ class VariableDecl(Node):
     """let name [: type_hint] = value"""
     name:      str
     value:     Optional[Node]
-    type_hint: Optional[str] = None
+    type_hint: Optional[Any] = None
     mutable:   bool = True
 
 
@@ -77,18 +77,20 @@ class AssignStmt(Node):
 @dataclass(kw_only=True)
 class FunctionDecl(Node):
     """func name(params) [-> return_type] { body }"""
-    name:        str
-    params:      List["Param"]
-    body:        Block
-    return_type: Optional[str] = None
-    is_method:   bool = False
+    name:            str
+    params:          List["Param"]
+    body:            Block
+    return_type:     Optional[Any] = None
+    is_method:       bool = False
+    is_async:        bool = False
+    type_parameters: List[str] = field(default_factory=list)
 
 
 @dataclass(kw_only=True)
 class Param(Node):
     """A single function parameter: name [: type_hint]"""
     name:      str
-    type_hint: Optional[str] = None
+    type_hint: Optional[Any] = None
     default:   Optional[Node] = None
 
 
@@ -328,3 +330,30 @@ class MatchStmt(Node):
     subject: Node
     cases:   List[MatchCase] = field(default_factory=list)
     default: Optional[Block] = None
+
+
+# ── Async/Await & Generics ───────────────────────────────────────────────────
+
+@dataclass(kw_only=True)
+class AwaitExpr(Node):
+    """await expr"""
+    expression: Node
+
+
+@dataclass(kw_only=True)
+class TypeAnnotation(Node):
+    """Base class for structured type annotations"""
+    pass
+
+
+@dataclass(kw_only=True)
+class SimpleType(TypeAnnotation):
+    """e.g. Int, String"""
+    name: str
+
+
+@dataclass(kw_only=True)
+class GenericType(TypeAnnotation):
+    """e.g. List<Int>, Map<String, Float>"""
+    name: str
+    params: List[TypeAnnotation] = field(default_factory=list)
