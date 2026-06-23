@@ -120,3 +120,55 @@ class TestTypeChecker:
         assert len(errors) == 1
         assert "Type mismatch" in errors[0]
 
+    def test_parameter_type_inference_from_default(self):
+        code = """
+        func greet(name, greeting = "Hello") {
+            return greeting
+        }
+        greet("Peeyush", 42) // should trigger error because greeting expects String
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Argument type mismatch" in errors[0]
+        assert "expected 'String', got 'Int'" in errors[0]
+
+    def test_function_return_type_inference(self):
+        code = """
+        func add(a: Int, b: Int) {
+            return a + b
+        }
+        let res: String = add(2, 3) // should trigger mismatch since add returns Int
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Type mismatch" in errors[0]
+        assert "cannot assign value of type 'Int' to variable 'res' of type 'String'" in errors[0]
+
+    def test_recursive_function_return_type_inference(self):
+        code = """
+        func fib(n: Int) {
+            if n <= 1 { return n }
+            return fib(n - 1) + fib(n - 2)
+        }
+        let res: String = fib(10) // should trigger mismatch since fib returns Int
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Type mismatch" in errors[0]
+        assert "cannot assign value of type 'Int'" in errors[0]
+
+    def test_multiple_returns_unification(self):
+        code = """
+        func choose(cond: Bool, x: Int, y: Float) {
+            if cond { return x }
+            return y
+        }
+        let val: Float = choose(true, 10, 20.5) // should be Float due to Int/Float unification
+        let err: Int = choose(true, 10, 20.5)   // should fail since unified is Float
+        """
+        errors = get_type_errors(code)
+        assert len(errors) == 1
+        assert "Type mismatch" in errors[0]
+        assert "cannot assign value of type 'Float' to variable 'err' of type 'Int'" in errors[0]
+
+

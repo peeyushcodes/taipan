@@ -57,10 +57,40 @@ class TypeChecker:
         self.errors: List[TaipanSemanticError] = []
         self.env = TypeEnvironment()
         self.current_return_type = "Any"
+        self._return_type_stack: List[List[Any]] = []
 
         # Pre-populate builtin function signatures
         for name, sig in BUILTIN_FUNCS.items():
             self.env.define(name, sig)
+
+    def _unify_types(self, types: List[Any]) -> Any:
+        """Compute the most specific common type of a list of types."""
+        if not types:
+            return "Null"
+        
+        current = types[0]
+        for t in types[1:]:
+            if current == t:
+                continue
+            if current == "Any":
+                current = t
+            elif t == "Any":
+                pass
+            elif current == "Null":
+                current = t
+            elif t == "Null":
+                pass
+            elif current == "Int" and t == "Float":
+                current = "Float"
+            elif current == "Float" and t == "Int":
+                current = "Float"
+            elif isinstance(current, FunctionType) and isinstance(t, FunctionType):
+                if repr(current) == repr(t):
+                    continue
+                current = "Any"
+            else:
+                current = "Any"
+        return current
 
     def is_compatible(self, actual: Any, expected: Any) -> bool:
         if actual == "Any" or expected == "Any":
@@ -122,27 +152,46 @@ class TypeChecker:
         parent_env = self.env
         self.env = TypeEnvironment(parent=parent_env)
 
+        inferred_param_types = []
         for param in node.params:
             p_type = param.type_hint or "Any"
             if param.default:
                 def_type = self.visit(param.default)
-                if not self.is_compatible(def_type, p_type):
+                if p_type == "Any":
+                    p_type = def_type
+                elif not self.is_compatible(def_type, p_type):
                     self.errors.append(TaipanSemanticError(
                         f"Parameter '{param.name}' default type '{def_type}' is incompatible with type hint '{p_type}'",
                         param.line, param.column
                     ))
             self.env.define(param.name, p_type)
+            inferred_param_types.append(p_type)
 
         old_return = self.current_return_type
         self.current_return_type = node.return_type or "Any"
 
+        self._return_type_stack.append([])
         self.visit(node.body)
+        inferred_returns = self._return_type_stack.pop()
+
+        inferred_ret_type = node.return_type
+        if inferred_ret_type is None:
+            inferred_ret_type = self._unify_types(inferred_returns)
+
+        # Update the function signature in the parent environment
+        func_type = parent_env.lookup(node.name)
+        if isinstance(func_type, FunctionType):
+            func_type.param_types = inferred_param_types
+            if node.return_type is None:
+                func_type.return_type = inferred_ret_type
 
         self.current_return_type = old_return
         self.env = parent_env
 
     def visit_ReturnStmt(self, node: ReturnStmt):
         ret_type = self.visit(node.value) if node.value else "Null"
+        if self._return_type_stack:
+            self._return_type_stack[-1].append(ret_type)
         if not self.is_compatible(ret_type, self.current_return_type):
             self.errors.append(TaipanSemanticError(
                 f"Incompatible return type: declared '{self.current_return_type}', got '{ret_type}'",
